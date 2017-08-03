@@ -43,6 +43,7 @@ func (p *prpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	defer file.Close()
 
 	// A service worker may only register with a scope above its own path if
 	// permitted by this header.
