@@ -95,6 +95,36 @@ func newBuild(config *ProjectConfig, configOrder int, requirements capability, e
 		manifest["/"+buildDir+"/"+path] = adjusted
 	}
 
+	// Tidy this and verify that it's correct reasoning
+	// also, knowledge of webcomponentsjs is a little too specific
+	// but we could scan the additonalDependencies to find it (?)
+
+	// add entries to push the webcomponents-loader and shell
+	manifest[entrypoint] = map[string]http2preload.AssetOpt{
+		"/" + buildDir + "/bower_components/webcomponentsjs/webcomponents-loader.js": {
+			Type:   "script",
+			Weight: 1,
+		},
+		"/" + buildDir + "/" + config.Shell: {
+			Type:   "document",
+			Weight: 1,
+		},
+	}
+
+	// add entries for the routes to load the fragments
+	// NOTE: These really need to be added to the router
+	// as they are an exact-match so would fail as prefix
+	for k, v := range config.Routes {
+		manifest[k] = map[string]http2preload.AssetOpt{
+			"/" + buildDir + "/" + v: {
+				Type:   "document",
+				Weight: 1,
+			},
+		}
+	}
+
+	// TODO: add child dependencies to each parent (?)
+
 	build := build{
 		configOrder:  configOrder,
 		requirements: requirements,
