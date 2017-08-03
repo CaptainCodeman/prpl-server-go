@@ -53,18 +53,28 @@ func (p *prpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if build.pushManifest != nil {
-		if assets, ok := build.pushManifest[urlPath]; ok {
-			s := r.Header.Get("x-forwarded-proto")
-			if s == "" && r.TLS != nil {
-				s = "https"
-			}
-			if s == "" {
-				s = "http"
-			}
-			http2preload.AddHeader(w.Header(), s, r.Host, assets)
+		s := r.Header.Get("x-forwarded-proto")
+		if s == "" && r.TLS != nil {
+			s = "https"
+		}
+		if s == "" {
+			s = "http"
+		}
+
+		// TODO: de-duplicate dependencies (?)
+		h := w.Header()
+		build.addHeaders(h, s, r.Host, serveFilename)
+		if urlPath != serveFilename {
+			build.addHeaders(h, s, r.Host, urlPath)
 		}
 	}
 
 	// send file
 	http.ServeContent(w, r, urlPath, time.Now().UTC(), file)
+}
+
+func (b *build) addHeaders(header http.Header, protocol, host, filename string) {
+	if assets, ok := b.pushManifest[filename]; ok {
+		http2preload.AddHeader(header, protocol, host, assets)
+	}
 }

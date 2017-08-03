@@ -20,7 +20,7 @@ type (
 	builds []*build
 )
 
-func loadBuilds(root string, config *ProjectConfig) builds {
+func loadBuilds(config *ProjectConfig, root string) builds {
 	builds := builds{}
 	entrypoint := "index.html"
 	if config != nil && config.Entrypoint != "" {
@@ -29,14 +29,14 @@ func loadBuilds(root string, config *ProjectConfig) builds {
 
 	if config == nil || len(config.Builds) == 0 {
 		fmt.Printf("WARNING: No builds configured\n")
-		builds = append(builds, newBuild(0, 0, entrypoint, root, root))
+		builds = append(builds, newBuild(config, 0, 0, entrypoint, root, root))
 	} else {
 		for i, build := range config.Builds {
 			if build.Name == "" {
 				fmt.Printf("WARNING: Build at offset %d has no name; skipping.\n", i)
 				continue
 			}
-			builds = append(builds, newBuild(i, newCapabilities(build.BrowserCapabilities), filepath.Join(build.Name, entrypoint), filepath.Join(root, build.Name), root))
+			builds = append(builds, newBuild(config, i, newCapabilities(build.BrowserCapabilities), "/"+filepath.Join(build.Name, entrypoint), filepath.Join(root, build.Name), root))
 		}
 	}
 
@@ -78,18 +78,28 @@ func (a byPriority) Less(i, j int) bool {
 	return sizeDiff > 0
 }
 
-func newBuild(configOrder int, requirements capability, entrypoint, buildDir, serverRoot string) *build {
+func newBuild(config *ProjectConfig, configOrder int, requirements capability, entrypoint, buildDir, serverRoot string) *build {
 	pushManifestPath := filepath.Join(buildDir, "push-manifest.json")
 	pushManifest, err := http2preload.ReadManifest(pushManifestPath)
 	if err != nil {
 
 	}
 
+	// update paths to account for build folder
+	manifest := http2preload.Manifest{}
+	for path, assets := range pushManifest {
+		adjusted := make(map[string]http2preload.AssetOpt, len(assets))
+		for assetPath, asset := range assets {
+			adjusted["/"+buildDir+"/"+assetPath] = asset
+		}
+		manifest["/"+buildDir+"/"+path] = adjusted
+	}
+
 	build := build{
 		configOrder:  configOrder,
 		requirements: requirements,
 		entrypoint:   entrypoint,
-		pushManifest: pushManifest,
+		pushManifest: manifest,
 	}
 
 	return &build

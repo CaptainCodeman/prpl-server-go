@@ -12,8 +12,10 @@ type (
 	// https://www.polymer-project.org/2.0/docs/tools/polymer-json
 	// https://github.com/Polymer/polymer-project-config/blob/master/src/index.ts
 	ProjectConfig struct {
-		Entrypoint string        `json:"entrypoint"`
-		Builds     []BuildConfig `json:"builds"`
+		Entrypoint string            `json:"entrypoint"`
+		Shell      string            `json:"shell"`
+		Builds     []BuildConfig     `json:"builds"`
+		Routes     map[string]string `json:"routes"`
 	}
 
 	// BuildConfig contains the build-specific browser capabilities

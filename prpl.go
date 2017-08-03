@@ -57,7 +57,7 @@ func ConfigFile(filename string) optionFn {
 			// return err
 		}
 		p.config = config
-		p.builds = loadBuilds(string(p.root), config)
+		p.builds = loadBuilds(config, string(p.root))
 		return nil
 	}
 }
