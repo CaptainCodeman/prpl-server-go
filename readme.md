@@ -7,7 +7,7 @@ An HTTP server for Go designed to serve [PRPL](https://developers.google.com/web
 ### As a binary
 ```sh
 $ go install github.com/captaincodeman/prpl-server-go
-$ prpl-server --root . --config polymer.json
+$ prpl-server --root . --config ./polymer.json
 ```
 
 ### As a library
@@ -145,33 +145,33 @@ You should always use `--https-redirect` in production, unless your reverse prox
 
 2. `cd` to the directory you want to serve (e.g. your app's `build/` directory if you are using polymer-cli).
 
-3. Run `npm init` or `yarn init` and follow the prompts to create your `package.json`.
+5. Create an `app.go` file. This is the command App Engine runs when your app starts.
 
-4. Run `npm install --save prpl-server` or `yarn add prpl-server` to add prpl-server as a dependency.
+```go
+package app
 
-5. Edit your `package.json` to add a `start` script. This is the command App Engine runs when your app starts. Configure `prpl-server` to listen on all hosts, and to redirect HTTP connections to HTTPS. You should also specify the version of Node your app requires via the `engines` section.
+import (
+	"net/http"
+	"github.com/captaincodeman/prpl-server-go"
+)
 
-```yaml
-application: my-application-id
-service: default
-version: alpha
-runtime: go
-api_version: go1.8
+func main() {
+	m, _ := prpl.New(
+		prpl.Root("."),
+		prpl.ConfigFile("./polymer.json"),
+	)
 
-instance_class: F1
+	http.Handle("/", m)
+}
 
-handlers:
-- url: /.*
-  script: _go_app
-  secure: always
 ```
 
 6. Create an `app.yaml` file. This tells App Engine that you want to use the Go environment:
 
 ```yaml
-application: my-application-id
+application: app-id   # change this
 service: default
-version: alpha
+version: alpha        # change this
 runtime: go
 api_version: go1.8
 
