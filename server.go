@@ -28,8 +28,7 @@ func (p *prpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	urlPath := r.URL.Path
-
-	serveFilename, err := filepath.Abs(filepath.Join(string(p.root), urlPath))
+	serveFilename, err := filepath.Abs(urlPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

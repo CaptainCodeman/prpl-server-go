@@ -1,6 +1,7 @@
 package prpl
 
 import (
+	"fmt"
 	"sort"
 
 	"path/filepath"
@@ -27,12 +28,12 @@ func loadBuilds(root string, config *ProjectConfig) builds {
 	}
 
 	if config == nil || len(config.Builds) == 0 {
-		// WARNING: No builds configure
+		fmt.Printf("WARNING: No builds configured\n")
 		builds = append(builds, newBuild(0, 0, entrypoint, root, root))
 	} else {
 		for i, build := range config.Builds {
 			if build.Name == "" {
-				// WARNING: Build at offset ${i} has no name; skipping.
+				fmt.Printf("WARNING: Build at offset %d has no name; skipping.\n", i)
 				continue
 			}
 			builds = append(builds, newBuild(i, newCapabilities(build.BrowserCapabilities), filepath.Join(build.Name, entrypoint), filepath.Join(root, build.Name), root))
@@ -44,8 +45,6 @@ func loadBuilds(root string, config *ProjectConfig) builds {
 	// Sanity check.
 	fallbackFound := false
 	for _, build := range builds {
-		// TODO: log
-		// fmt.Sprintf(`Registered entrypoint "%s" with capabilities %s`, build.entrypoint, build.requirements)
 
 		// Note `build.entrypoint` is relative to the server root, but that's not
 		// neccessarily our cwd.
@@ -61,7 +60,7 @@ func loadBuilds(root string, config *ProjectConfig) builds {
 	}
 
 	if !fallbackFound {
-		// WARNING: All builds have a capability requirement. Some browsers will display an error. Consider a fallback build.
+		fmt.Printf("WARNING: All builds have a capability requirement. Some browsers will display an error. Consider a fallback build.\n")
 	}
 
 	return builds

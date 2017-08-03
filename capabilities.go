@@ -82,18 +82,28 @@ func newCapabilities(browserCapabilities []string) capability {
 	for _, c := range browserCapabilities {
 		switch c {
 		case "es2015":
-			capability &= es2015
+			capability += es2015
 		case "push":
-			capability &= push
+			capability += push
 		case "serviceworker":
-			capability &= serviceworker
+			capability += serviceworker
 		}
 	}
 	return capability
 }
 
 func (c capability) size() int {
-	return 0
+	size := 0
+	if c&es2015 == es2015 {
+		size++
+	}
+	if c&push == push {
+		size++
+	}
+	if c&serviceworker == serviceworker {
+		size++
+	}
+	return size
 }
 
 func (c capability) String() string {

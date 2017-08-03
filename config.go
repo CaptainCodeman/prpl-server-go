@@ -33,5 +33,6 @@ func loadProjectConfig(filename string) (*ProjectConfig, error) {
 	if err := dec.Decode(&config); err != nil {
 		return nil, err
 	}
+
 	return &config, nil
 }
