@@ -2,6 +2,8 @@
 
 An HTTP server for Go designed to serve [PRPL](https://developers.google.com/web/fundamentals/performance/prpl-pattern/) apps in production.
 
+See [live example here](https://prpl-dot-captain-codeman.appspot.com/)
+
 ## Usage
 
 ### As a binary
@@ -152,10 +154,11 @@ package app
 
 import (
 	"net/http"
+
 	"github.com/captaincodeman/prpl-server-go"
 )
 
-func main() {
+func init() {
 	m, _ := prpl.New(
 		prpl.Root("."),
 		prpl.ConfigFile("./polymer.json"),
@@ -163,15 +166,12 @@ func main() {
 
 	http.Handle("/", m)
 }
-
 ```
 
 6. Create an `app.yaml` file. This tells App Engine that you want to use the Go environment:
 
 ```yaml
-application: app-id   # change this
 service: default
-version: alpha        # change this
 runtime: go
 api_version: go1.8
 

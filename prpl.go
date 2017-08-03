@@ -2,7 +2,7 @@ package prpl
 
 import (
 	"net/http"
-	// "github.com/google/http2preload"
+
 	"github.com/ua-parser/uap-go/uaparser"
 )
 
