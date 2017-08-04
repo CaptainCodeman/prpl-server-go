@@ -50,9 +50,9 @@ func TestParseVersion(t *testing.T) {
 		version version
 		values  []int
 	}{
-		{"37", []int{37}},
-		{"10.987.00.1", []int{10, 987, 0, 1}},
-		{"4..foo.7", []int{4, -1, -1, 7}},
+		{"37", ints(37)},
+		{"10.987.00.1", ints(10, 987, 0, 1)},
+		{"4..foo.7", ints(4, -1, -1, 7)},
 	}
 
 	for _, test := range tests {

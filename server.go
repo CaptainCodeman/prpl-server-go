@@ -64,9 +64,6 @@ func (p *prpl) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// TODO: de-duplicate dependencies (?)
 		h := w.Header()
 		build.addHeaders(h, s, r.Host, serveFilename)
-		if urlPath != serveFilename {
-			build.addHeaders(h, s, r.Host, urlPath)
-		}
 	}
 
 	// send file
