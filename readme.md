@@ -145,9 +145,13 @@ You should always use `--https-redirect` in production, unless your reverse prox
 
 1. Follow [these instructions](https://cloud.google.com/appengine/docs/standard/go/quickstart) to set up a Google Cloud project and install the Google Cloud SDK. As instructed, run the `gcloud init` command to authenticate and choose your project ID.
 
-2. `cd` to the directory you want to serve (e.g. your app's `build/` directory if you are using polymer-cli).
+2. `cd` to the directory you want to serve (e.g. a `server/` directory withint your polymer-cli project).
 
-5. Create an `app.go` file. This is the command App Engine runs when your app starts.
+3. Create a symlink to include the contents of the build output folder:
+
+    ln -s ../build static
+
+4. Create an `app.go` file. This is the command App Engine runs when your app starts and contains details of the version of your app, where the files are located and how routes map to fragments.
 
 ```go
 package app
@@ -160,15 +164,28 @@ import (
 
 func init() {
 	m, _ := prpl.New(
-		prpl.Root("."),
-		prpl.ConfigFile("./polymer.json"),
+		prpl.WithVersion("20170806"),
+		prpl.WithRoot("./static"),
+		prpl.WithConfigFile("./static/polymer.json"),
+		prpl.WithRoutes(prpl.Routes{
+			"/":      "src/my-view1.html",
+			"/view1": "src/my-view1.html",
+			"/view2": "src/my-view2.html",
+			"/view3": "src/my-view3.html",
+		}),
 	)
 
 	http.Handle("/", m)
 }
 ```
 
-6. Create an `app.yaml` file. This tells App Engine that you want to use the Go environment:
+5. Create an `app.yaml` file. We have included a command-line tool to help automate this:
+
+    prpl-config --root static 
+	            --config polymer.json 
+				--static-version 20170806 > app.yaml
+
+Note the `static-version` parameter should be the same as the one included in the go file. This may be automated in future. Here's an example of the `app.yaml` file produced:
 
 ```yaml
 service: default
@@ -178,9 +195,78 @@ api_version: go1.8
 instance_class: F1
 
 handlers:
+- url: /20170806/es5-bundled/index.html
+  script: _go_app
+  secure: always
+
+- url: /20170806/es5-bundled/service-worker.js
+  static_files: static/es5-bundled/service-worker.js
+  upload: static/es5-bundled/service-worker.js
+  secure: always
+  http_headers:
+    Cache-Control: "private, max-age=0, must-revalidate"
+    Service-Worker-Allowed: "/"
+
+- url: /20170806/es5-bundled/
+  static_dir: static/es5-bundled/
+  application_readable: true
+  secure: always
+  http_headers:
+    Cache-Control: "public, max-age=31536000, immutable"
+
+- url: /20170806/es6-bundled/index.html
+  script: _go_app
+  secure: always
+
+- url: /20170806/es6-bundled/service-worker.js
+  static_files: static/es6-bundled/service-worker.js
+  upload: static/es6-bundled/service-worker.js
+  secure: always
+  http_headers:
+    Cache-Control: "private, max-age=0, must-revalidate"
+    Service-Worker-Allowed: "/"
+
+- url: /20170806/es6-bundled/
+  static_dir: static/es6-bundled/
+  application_readable: true
+  secure: always
+  http_headers:
+    Cache-Control: "public, max-age=31536000, immutable"
+
+- url: /20170806/es6-unbundled/index.html
+  script: _go_app
+  secure: always
+
+- url: /20170806/es6-unbundled/service-worker.js
+  static_files: static/es6-unbundled/service-worker.js
+  upload: static/es6-unbundled/service-worker.js
+  secure: always
+  http_headers:
+    Cache-Control: "private, max-age=0, must-revalidate"
+    Service-Worker-Allowed: "/"
+
+- url: /20170806/es6-unbundled/
+  static_dir: static/es6-unbundled/
+  application_readable: true
+  secure: always
+  http_headers:
+    Cache-Control: "public, max-age=31536000, immutable"
+
 - url: /.*
   script: _go_app
   secure: always
 ```
 
-7. Run `gcloud app deploy` to deploy to your App Engine project. `gcloud` will tell you the URL your app is being served from. For next steps, check out the Go on Google App Engine [documentation](https://cloud.google.com/appengine/docs/go/).
+The configuration may seem complex but this is necessary to make optimal use of AppEngine's static file service and edge caching which avoids consuming instance CPU to serve most of the files while still allowing certain files to be modified (to add the version to the path which enables long cache espirations to be used).
+
+There are really three handler mappings repeated for each build configuration: 
+
+`url: /version/build/index.html` maps the entrypoint for each build to the app. The app will update the `<base href="/build/">` tag to include the version string.
+
+`url: /version/build/service-worker.js` configures specific http headers for the service worker disable caching and to allow it to be used from a sub-folder.
+
+`url: /version/build/` configures the remaining static files for a build to be served by the edge cache with long expiration times.
+
+The final handler mapping `url: /.*` ensures that regular app routes can be handled by the app. These check the browser's capabilities and direct it to the appropriate build variation by outputting the appropriate build's entrypoint, transformed to add the version string to the paths.
+
+6. Run `gcloud app deploy` to deploy to your App Engine project. `gcloud` will tell you the URL your app is being served from. For next steps, check out the Go on Google App Engine [documentation](https://cloud.google.com/appengine/docs/go/).
