@@ -9,10 +9,13 @@ import (
 type (
 	// prpl is an instance of the prpl-server service
 	prpl struct {
-		parser *uaparser.Parser
-		config *ProjectConfig
-		builds builds
-		root   http.Dir
+		http.Handler
+		parser  *uaparser.Parser
+		config  *ProjectConfig
+		builds  builds
+		root    http.Dir
+		routes  Routes
+		version string
 	}
 
 	// optionFn provides functonal option configuration
@@ -22,8 +25,9 @@ type (
 // New creates a new prpl instance
 func New(options ...optionFn) (*prpl, error) {
 	p := prpl{
-		parser: uaparser.NewFromSaved(),
-		root:   http.Dir("."),
+		parser:  uaparser.NewFromSaved(),
+		root:    http.Dir("."),
+		version: "/static/",
 	}
 
 	for _, option := range options {
@@ -34,37 +38,67 @@ func New(options ...optionFn) (*prpl, error) {
 
 	// use polymer.json for build file by default
 	if p.config == nil {
-		if err := ConfigFile("polymer.json")(&p); err != nil {
+		if err := WithConfigFile("polymer.json")(&p); err != nil {
 			return nil, err
 		}
 	}
 
+	p.Handler = p.createHandler()
+	p.builds = loadBuilds(p.config, p.root, p.routes, p.version)
+
 	return &p, nil
 }
 
-func Root(root http.Dir) optionFn {
+// TODO: provide options to auto-create the version
+// based on last modified timestamp or content hash
+
+// WithVersion sets the version prefix
+func WithVersion(version string) optionFn {
+	return func(p *prpl) error {
+		p.version = "/" + version + "/"
+		return nil
+	}
+}
+
+// WithRoutes sets the route -> fragment mapping
+func WithRoutes(routes Routes) optionFn {
+	return func(p *prpl) error {
+		p.routes = routes
+		return nil
+	}
+}
+
+// WithRoot sets the root directory
+func WithRoot(root http.Dir) optionFn {
 	return func(p *prpl) error {
 		p.root = root
 		return nil
 	}
 }
 
-// ConfigFile loads the project configuration
-func ConfigFile(filename string) optionFn {
+// WithConfig sets the project configuration
+func WithConfig(config *ProjectConfig) optionFn {
 	return func(p *prpl) error {
-		config, err := loadProjectConfig(filename)
-		if err != nil {
-			// return err
-		}
 		p.config = config
-		p.builds = loadBuilds(config, string(p.root))
 		return nil
 	}
 }
 
-// RegexFile allows the uaparser configuration
-// to be overriden from the provided yaml file
-func RegexFile(regexFile string) optionFn {
+// WithConfigFile loads the project configuration
+func WithConfigFile(filename string) optionFn {
+	return func(p *prpl) error {
+		config, err := ConfigFromFile(filename)
+		if err != nil {
+			return err
+		}
+		p.config = config
+		return nil
+	}
+}
+
+// WithUAParserFile allows the uaparser configuration
+// to be overriden from the inbuilt settings
+func WithUAParserFile(regexFile string) optionFn {
 	return func(p *prpl) error {
 		parser, err := uaparser.New(regexFile)
 		if err != nil {
@@ -75,9 +109,9 @@ func RegexFile(regexFile string) optionFn {
 	}
 }
 
-// RegexBytes allows the uaparser configuration
-// to be overriden from the yaml-formatted bytes
-func RegexBytes(data []byte) optionFn {
+// WithUAParserBytes allows the uaparser configuration
+// to be overriden from the inbuilt settings
+func WithUAParserBytes(data []byte) optionFn {
 	return func(p *prpl) error {
 		parser, err := uaparser.NewFromBytes(data)
 		if err != nil {

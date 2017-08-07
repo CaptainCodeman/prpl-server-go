@@ -8,8 +8,7 @@ import (
 	"strconv"
 
 	"github.com/captaincodeman/prpl-server-go"
-	"github.com/phyber/negroni-gzip/gzip"
-	"github.com/urfave/negroni"
+	"github.com/go-chi/chi/middleware"
 )
 
 var (
@@ -61,20 +60,21 @@ func main() {
 	}
 
 	m, _ := prpl.New(
-		prpl.Root(http.Dir(root)),
-		prpl.ConfigFile(config),
+		prpl.WithRoot(http.Dir(root)),
+		prpl.WithConfigFile(config),
 	)
 
-	n := negroni.New()
-	n.Use(negroni.NewRecovery())
-	n.Use(negroni.NewLogger())
-	n.Use(gzip.Gzip(gzip.DefaultCompression))
-	n.UseHandler(m)
+	var h http.Handler
+	
+	h = m
+	h = middleware.Recoverer(h)
+	h = middleware.Logger(h)
+	h = middleware.DefaultCompress(h)
 
 	// TODO: graceful shutdown
 	// TODO: redirect to https (auto cert?)
 	// TODO: handle X-Forwarded- headers
 
 	addr := net.JoinHostPort(host, strconv.Itoa(port))
-	http.ListenAndServe(addr, n)
+	http.ListenAndServe(addr, h)
 }
