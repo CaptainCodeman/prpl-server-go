@@ -4,6 +4,10 @@ An HTTP server for Go designed to serve [PRPL](https://developers.google.com/web
 
 See [live example here](https://prpl-dot-captain-codeman.appspot.com/)
 
+Lighthouse score (remote / over the intertubes):
+
+![lighthouse performance](https://user-images.githubusercontent.com/304910/29055951-e953081c-7bbc-11e7-8ad9-bf52b0485c81.png)
+
 ## Usage
 
 ### As a binary
