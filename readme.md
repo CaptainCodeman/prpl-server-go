@@ -161,7 +161,7 @@ You should always use `--https-redirect` in production, unless your reverse prox
 package app
 
 import (
-  "os"
+	"os"
 
 	"net/http"
 
@@ -169,7 +169,7 @@ import (
 )
 
 func init() {
-  version := os.Getenv("STATIC_VERSION")
+	version := os.Getenv("STATIC_VERSION")
 	m, _ := prpl.New(
 		prpl.WithVersion(version),
 		prpl.WithRoot("./static"),
