@@ -161,14 +161,17 @@ You should always use `--https-redirect` in production, unless your reverse prox
 package app
 
 import (
+  "os"
+
 	"net/http"
 
 	"github.com/captaincodeman/prpl-server-go"
 )
 
 func init() {
+  version := os.Getenv("STATIC_VERSION")
 	m, _ := prpl.New(
-		prpl.WithVersion("20170806"),
+		prpl.WithVersion(version),
 		prpl.WithRoot("./static"),
 		prpl.WithConfigFile("./static/polymer.json"),
 		prpl.WithRoutes(prpl.Routes{
@@ -259,6 +262,9 @@ handlers:
 - url: /.*
   script: _go_app
   secure: always
+
+env_variables:
+  STATIC_VERSION: 20170806
 ```
 
 The configuration may seem complex but this is necessary to make optimal use of AppEngine's static file service and edge caching which avoids consuming instance CPU to serve most of the files while still allowing certain files to be modified (to add the version to the path which enables long cache espirations to be used).

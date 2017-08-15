@@ -31,6 +31,7 @@ var (
 	projectVersion string
 	staticVersion  string
 	staticPath     string
+	templatePath   string
 	yamlTemplate   *template.Template
 )
 
@@ -46,8 +47,7 @@ func init() {
 	flag.StringVar(&staticPath, "static-path", "static", `Path to static folder relative to app.yaml (default "static").`)
 	flag.StringVar(&root, "root", ".", `Serve files relative to this directory (default ".").`)
 	flag.StringVar(&config, "config", "", `JSON configuration file (default "<root>/polymer.json" if exists).`)
-
-	yamlTemplate = template.Must(template.New("template").Parse(templateString))
+	flag.StringVar(&templatePath, "template", "app.yaml.template", `app.yaml template file (default inbuilt template).`)
 }
 
 func main() {
@@ -75,7 +75,20 @@ func main() {
 	filename := filepath.Join(root, config)
 	config, err := prpl.ConfigFromFile(filename)
 	if err != nil {
-		fmt.Printf("couldn't load config %v", err)
+		fmt.Printf("couldn't load config %v\n", err)
+		return
+	}
+
+	if templatePath == "" {
+		yamlTemplate = template.Must(template.New("template").Parse(templateString))
+	} else {
+		println("template", templatePath)
+		var err error
+		yamlTemplate, err = template.ParseFiles(templatePath)
+		if err != nil {
+			fmt.Printf("couldn't load template %v\n", err)
+			return
+		}
 	}
 
 	context := Context{
@@ -88,7 +101,7 @@ func main() {
 	}
 
 	if err := yamlTemplate.Execute(os.Stdout, context); err != nil {
-		fmt.Printf("errpr %v", err)
+		fmt.Printf("error %v\n", err)
 	}
 }
 
@@ -127,4 +140,7 @@ handlers:
 - url: /.*
   script: _go_app
   secure: always
+
+env_variables:
+  STATIC_VERSION: {{ .StaticVersion }}
 `
