@@ -47,7 +47,7 @@ func init() {
 	flag.StringVar(&staticPath, "static-path", "static", `Path to static folder relative to app.yaml (default "static").`)
 	flag.StringVar(&root, "root", ".", `Serve files relative to this directory (default ".").`)
 	flag.StringVar(&config, "config", "", `JSON configuration file (default "<root>/polymer.json" if exists).`)
-	flag.StringVar(&templatePath, "template", "app.yaml.template", `app.yaml template file (default inbuilt template).`)
+	flag.StringVar(&templatePath, "template", "", `app.yaml template file (default inbuilt template).`)
 }
 
 func main() {
@@ -82,7 +82,6 @@ func main() {
 	if templatePath == "" {
 		yamlTemplate = template.Must(template.New("template").Parse(templateString))
 	} else {
-		println("template", templatePath)
 		var err error
 		yamlTemplate, err = template.ParseFiles(templatePath)
 		if err != nil {
