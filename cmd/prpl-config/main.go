@@ -108,7 +108,7 @@ const templateString = `{{ if .ProjectID }}project: {{ .ProjectID }}{{ end }}
 {{ if .ProjectVersion }}version: {{ .ProjectVersion }}{{ end }}
 service: {{ .ProjectService }}
 runtime: go
-api_version: go1.8
+api_version: go1.6
 
 instance_class: F1
 
