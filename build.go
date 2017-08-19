@@ -3,6 +3,7 @@ package prpl
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"time"
@@ -18,7 +19,7 @@ type (
 		configOrder  int
 		requirements capability
 		entrypoint   string
-		pushManifest Manifest
+		template     Template
 		pushHeaders  PushHeaders
 	}
 
@@ -39,7 +40,7 @@ type (
 
 var files = make(map[string]*file)
 
-func loadBuilds(config *ProjectConfig, root http.Dir, routes Routes, version string) builds {
+func loadBuilds(config *ProjectConfig, root http.Dir, routes Routes, version string, createTemplate createTemplateFn) builds {
 	builds := builds{}
 	entrypoint := "index.html"
 	if config != nil && config.Entrypoint != "" {
@@ -47,15 +48,15 @@ func loadBuilds(config *ProjectConfig, root http.Dir, routes Routes, version str
 	}
 
 	if config == nil || len(config.Builds) == 0 {
-		fmt.Printf("WARNING: No builds configured\n")
-		builds = append(builds, newBuild(config, 0, "", 0, entrypoint, string(root), root, routes, version))
+		log.Println("WARNING: No builds configured")
+		builds = append(builds, newBuild(config, 0, "", 0, entrypoint, string(root), root, routes, version, createTemplate))
 	} else {
 		for i, build := range config.Builds {
 			if build.Name == "" {
-				fmt.Printf("WARNING: Build at offset %d has no name; skipping.\n", i)
+				log.Printf("WARNING: Build at offset %d has no name; skipping.\n", i)
 				continue
 			}
-			builds = append(builds, newBuild(config, i, build.Name, newCapabilities(build.BrowserCapabilities), filepath.Join(build.Name, entrypoint), filepath.Join(string(root), build.Name), root, routes, version))
+			builds = append(builds, newBuild(config, i, build.Name, newCapabilities(build.BrowserCapabilities), filepath.Join(build.Name, entrypoint), filepath.Join(string(root), build.Name), root, routes, version, createTemplate))
 		}
 	}
 
@@ -79,7 +80,7 @@ func loadBuilds(config *ProjectConfig, root http.Dir, routes Routes, version str
 	}
 
 	if !fallbackFound {
-		fmt.Printf("WARNING: All builds have a capability requirement. Some browsers will display an error. Consider a fallback build.\n")
+		log.Println("WARNING: All builds have a capability requirement. Some browsers will display an error. Consider a fallback build.")
 	}
 
 	return builds
@@ -97,42 +98,47 @@ func (a byPriority) Less(i, j int) bool {
 	return sizeDiff > 0
 }
 
-func newBuild(config *ProjectConfig, configOrder int, name string, requirements capability, entrypoint, buildDir string, root http.Dir, routes Routes, version string) *build {
+func newBuild(config *ProjectConfig, configOrder int, name string, requirements capability, entrypoint, buildDir string, root http.Dir, routes Routes, version string, createTemplate createTemplateFn) *build {
 	pushManifestPath := filepath.Join(buildDir, "push-manifest.json")
 	pushManifest, err := ReadManifest(pushManifestPath)
 	if err != nil {
 		// return err
 	}
 
+	var template Template
+
 	err = filepath.Walk(buildDir, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			filename, _ := filepath.Rel(string(root), path)
+		if info.IsDir() {
+			return nil
+		}
 
-			f, err := root.Open(filename)
-			if err != nil {
-				return err
-			}
+		filename, _ := filepath.Rel(string(root), path)
 
-			data, err := ioutil.ReadAll(f)
-			if err != nil {
-				return err
-			}
+		f, err := root.Open(filename)
+		if err != nil {
+			return err
+		}
 
-			if filename == entrypoint {
-				// add version to path
-				data = bytes.Replace(
-					data,
-					[]byte(fmt.Sprintf(`<base href="/%s/">`, name)),
-					[]byte(fmt.Sprintf(`<base href="%s%s/">`, version, name)),
-					1)
-			}
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			return err
+		}
 
-			// println("add", "/"+filename)
-			files[filename] = &file{
-				data:    data,
-				size:    info.Size(),
-				modTime: info.ModTime(),
-			}
+		if filename == entrypoint {
+			// add version to path
+			data = bytes.Replace(
+				data,
+				[]byte(fmt.Sprintf(`<base href="/%s/">`, name)),
+				[]byte(fmt.Sprintf(`<base href="%s%s/">`, version, name)),
+				1)
+
+			template = createTemplate(entrypoint, data, info.ModTime())
+		}
+
+		files[filename] = &file{
+			data:    data,
+			size:    info.Size(),
+			modTime: info.ModTime(),
 		}
 
 		return nil
@@ -188,7 +194,7 @@ func newBuild(config *ProjectConfig, configOrder int, name string, requirements 
 		configOrder:  configOrder,
 		requirements: requirements,
 		entrypoint:   entrypoint,
-		pushManifest: manifest,
+		template:     template,
 		pushHeaders:  pushHeaders,
 	}
 

@@ -5,8 +5,6 @@ import (
 	"regexp"
 
 	"net/http"
-
-	"github.com/go-chi/chi"
 )
 
 var (
@@ -16,12 +14,19 @@ var (
 )
 
 func (p *prpl) createHandler() http.Handler {
-	r := chi.NewRouter()
+	m := http.NewServeMux()
 
-	r.Handle(p.version+"*", http.StripPrefix(p.version, http.HandlerFunc(p.staticHandler)))
-	r.Get("/*", p.routeHandler)
+	for _, build := range p.builds {
+		m.HandleFunc(p.version+build.entrypoint, p.routeHandler)
+		for path, handler := range p.staticHandlers {
+			m.Handle(p.version+build.name+"/"+path, handler)
+		}
+	}
 
-	return r
+	m.Handle(p.version, http.StripPrefix(p.version, http.HandlerFunc(p.staticHandler)))
+	m.HandleFunc("/", p.routeHandler)
+
+	return m
 }
 
 func (p *prpl) routeHandler(w http.ResponseWriter, r *http.Request) {
@@ -32,19 +37,10 @@ func (p *prpl) routeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, found := files[build.entrypoint]
-	if !found {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
-
 	h := w.Header()
-
 	h.Set("Cache-Control", "public, max-age=0")
 	build.addHeaders(w, h, r.URL.Path)
-
-	content := bytes.NewReader(file.data)
-	http.ServeContent(w, r, build.entrypoint, file.modTime, content)
+	build.template.Render(w, r)
 }
 
 func (p *prpl) staticHandler(w http.ResponseWriter, r *http.Request) {
