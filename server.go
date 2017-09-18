@@ -2,15 +2,9 @@ package prpl
 
 import (
 	"bytes"
-	"regexp"
+	"strings"
 
 	"net/http"
-)
-
-var (
-	// TODO: Service worker location should be configurable.
-	// TODO: avoid doing regex at runtime, flag entry at build
-	isServiceWorker = regexp.MustCompile(`service-worker.js$`)
 )
 
 func (p *prpl) createHandler() http.Handler {
@@ -52,7 +46,9 @@ func (p *prpl) staticHandler(w http.ResponseWriter, r *http.Request) {
 
 	h := w.Header()
 
-	if isServiceWorker.MatchString(r.URL.Path) {
+	// TODO: Service worker location should be configurable.
+	// TODO: avoid doing regex at runtime, flag entry at build
+	if strings.HasSuffix(r.URL.Path, "service-worker.js") {
 		h.Set("Service-Worker-Allowed", "/")
 		h.Set("Cache-Control", "private, max-age=0")
 	} else {
