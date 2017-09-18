@@ -112,19 +112,23 @@ func newBuild(config *ProjectConfig, configOrder int, name string, requirements 
 			return nil
 		}
 
+		file := &file{
+			size:    info.Size(),
+			modTime: info.ModTime(),
+		}
+
 		filename, _ := filepath.Rel(string(root), path)
-
-		f, err := root.Open(filename)
-		if err != nil {
-			return err
-		}
-
-		data, err := ioutil.ReadAll(f)
-		if err != nil {
-			return err
-		}
-
 		if filename == entrypoint {
+			f, err := root.Open(filename)
+			if err != nil {
+				return err
+			}
+
+			data, err := ioutil.ReadAll(f)
+			if err != nil {
+				return err
+			}
+
 			// add version to path
 			data = bytes.Replace(
 				data,
@@ -133,13 +137,11 @@ func newBuild(config *ProjectConfig, configOrder int, name string, requirements 
 				1)
 
 			template = createTemplate(entrypoint, data, info.ModTime())
+
+			file.data = data
 		}
 
-		files[filename] = &file{
-			data:    data,
-			size:    info.Size(),
-			modTime: info.ModTime(),
-		}
+		files[filename] = file
 
 		return nil
 	})
