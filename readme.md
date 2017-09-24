@@ -32,8 +32,8 @@ import (
 
 func main() {
 	m, _ := prpl.New(
-        prpl.Root("build"),
-        prpl.ConfigFile("build/polymer.json"),
+        prpl.WithRoot("build"),
+        prpl.WithConfigFile("build/polymer.json"),
     )
 
 	http.ListenAndServe(":8080", m)
@@ -189,8 +189,8 @@ func init() {
 5. Create an `app.yaml` file. We have included a command-line tool to help automate this:
 
     prpl-config --root static 
-	            --config polymer.json 
-				--static-version 20170806 > app.yaml
+	              --config polymer.json 
+				        --static-version 20170806 > app.yaml
 
 Note the `static-version` parameter should be the same as the one included in the go file. This may be automated in future. Here's an example of the `app.yaml` file produced:
 
