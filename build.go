@@ -139,9 +139,8 @@ func newBuild(config *ProjectConfig, configOrder int, name string, requirements 
 			template = createTemplate(entrypoint, data, info.ModTime())
 
 			file.data = data
+			files[filename] = file
 		}
-
-		files[filename] = file
 
 		return nil
 	})

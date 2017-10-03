@@ -17,7 +17,8 @@ func (p *prpl) createHandler() http.Handler {
 		}
 	}
 
-	m.Handle(p.version, http.StripPrefix(p.version, http.HandlerFunc(p.staticHandler)))
+	m.Handle(p.version, http.StripPrefix(p.version, p.staticHandler(http.FileServer(p.root))))
+
 	m.HandleFunc("/", p.routeHandler)
 
 	return m
@@ -37,30 +38,32 @@ func (p *prpl) routeHandler(w http.ResponseWriter, r *http.Request) {
 	build.template.Render(w, r)
 }
 
-func (p *prpl) staticHandler(w http.ResponseWriter, r *http.Request) {
-	file, found := files[r.URL.Path]
-	if !found {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
+func (p *prpl) staticHandler(next http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		// TODO: Service worker location should be configurable.
+		h := w.Header()
+		if strings.HasSuffix(r.URL.Path, "service-worker.js") {
+			h.Set("Service-Worker-Allowed", "/")
+			h.Set("Cache-Control", "private, max-age=0")
+		} else {
+			h.Set("Cache-Control", "public, max-age=31536000, immutable")
+		}
+
+		file, found := files[r.URL.Path]
+		if !found {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// TODO: if using original prpl-server-node strategy
+		// add the push headers for *this* push-manifest entry
+		// build.addHeaders(w, h, r.URL.Path)
+
+		content := bytes.NewReader(file.data)
+		http.ServeContent(w, r, r.URL.Path, file.modTime, content)
 	}
 
-	h := w.Header()
-
-	// TODO: Service worker location should be configurable.
-	// TODO: avoid doing regex at runtime, flag entry at build
-	if strings.HasSuffix(r.URL.Path, "service-worker.js") {
-		h.Set("Service-Worker-Allowed", "/")
-		h.Set("Cache-Control", "private, max-age=0")
-	} else {
-		h.Set("Cache-Control", "public, max-age=31536000, immutable")
-	}
-
-	// TODO: if using original prpl-server-node strategy
-	// add the push headers for *this* push-manifest entry
-	// build.addHeaders(w, h, r.URL.Path)
-
-	content := bytes.NewReader(file.data)
-	http.ServeContent(w, r, r.URL.Path, file.modTime, content)
+	return http.HandlerFunc(fn)
 }
 
 func (b *build) addHeaders(w http.ResponseWriter, header http.Header, filename string) {
