@@ -6,7 +6,7 @@ See [live example here](https://prpl-dot-captain-codeman.appspot.com/)
 
 Lighthouse score (remote / over the intertubes):
 
-![lighthouse performance](https://user-images.githubusercontent.com/304910/29055951-e953081c-7bbc-11e7-8ad9-bf52b0485c81.png)
+![lighthouse performance](https://user-images.githubusercontent.com/304910/31322517-8c8f942c-ac56-11e7-96da-0c2a9cbb9a7c.png)
 
 ## Usage
 
