@@ -10,14 +10,14 @@ import (
 func (p *prpl) createHandler() http.Handler {
 	m := http.NewServeMux()
 
-	for _, build := range p.builds {
-		m.HandleFunc(p.version+build.entrypoint, p.routeHandler)
-		for path, handler := range p.staticHandlers {
-			m.Handle(p.version+build.name+"/"+path, handler)
-		}
+	for path, handler := range p.staticHandlers {
+		m.Handle(path, handler)
 	}
 
-	m.Handle(p.version, http.StripPrefix(p.version, p.staticHandler(http.FileServer(p.root))))
+	for _, build := range p.builds {
+		m.HandleFunc(build.entrypoint, p.routeHandler)
+		m.Handle(build.name, http.StripPrefix(build.name, p.staticHandler(http.FileServer(p.root))))
+	}
 
 	m.HandleFunc("/", p.routeHandler)
 

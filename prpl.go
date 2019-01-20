@@ -15,7 +15,6 @@ type (
 		builds         builds
 		root           http.Dir
 		routes         Routes
-		version        string
 		staticHandlers map[string]http.Handler
 		createTemplate createTemplateFn
 	}
@@ -29,7 +28,6 @@ func New(options ...optionFn) (*prpl, error) {
 	p := prpl{
 		parser:         uaparser.NewFromSaved(),
 		root:           http.Dir("."),
-		version:        "/static/",
 		staticHandlers: make(map[string]http.Handler),
 		createTemplate: createDefaultTemplate,
 	}
@@ -48,22 +46,11 @@ func New(options ...optionFn) (*prpl, error) {
 	}
 
 	// TODO: pass p in rather than all the properties
-	p.builds = loadBuilds(p.config, p.root, p.routes, p.version, p.createTemplate)
+	p.builds = loadBuilds(p.config, p.root, p.routes, p.createTemplate)
 
 	p.Handler = p.createHandler()
 
 	return &p, nil
-}
-
-// TODO: provide options to auto-create the version
-// based on last modified timestamp or content hash
-
-// WithVersion sets the version prefix
-func WithVersion(version string) optionFn {
-	return func(p *prpl) error {
-		p.version = "/" + version + "/"
-		return nil
-	}
 }
 
 // WithRoutes sets the route -> fragment mapping

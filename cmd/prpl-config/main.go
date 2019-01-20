@@ -17,7 +17,6 @@ type Context struct {
 	ProjectID      string
 	ProjectService string
 	ProjectVersion string
-	StaticVersion  string
 	StaticPath     string
 }
 
@@ -29,7 +28,6 @@ var (
 	projectID      string
 	projectService string
 	projectVersion string
-	staticVersion  string
 	staticPath     string
 	templatePath   string
 	yamlTemplate   *template.Template
@@ -43,7 +41,6 @@ func init() {
 	flag.StringVar(&projectID, "project-id", "", `AppEngine Project ID.`)
 	flag.StringVar(&projectService, "project-service", "default", `AppEngine Service.`)
 	flag.StringVar(&projectVersion, "project-version", "", `AppEngine Version.`)
-	flag.StringVar(&staticVersion, "static-version", timestamp, `Version to add to static folder path (default YYYYMMDDhhmmss timestamp).`)
 	flag.StringVar(&staticPath, "static-path", "static", `Path to static folder relative to app.yaml (default "static").`)
 	flag.StringVar(&root, "root", ".", `Serve files relative to this directory (default ".").`)
 	flag.StringVar(&config, "config", "", `JSON configuration file (default "<root>/polymer.json" if exists).`)
@@ -95,7 +92,6 @@ func main() {
 		projectID,
 		projectService,
 		projectVersion,
-		staticVersion,
 		staticPath,
 	}
 
@@ -115,11 +111,11 @@ instance_class: F1
 handlers:
 {{- with $x := . -}}
 {{- range $build := .Builds }}
-- url: /{{ $x.StaticVersion }}/{{ $build.Name }}/index.html
+- url: /{{ $build.Name }}/index.html
   script: _go_app
   secure: always
 
-- url: /{{ $x.StaticVersion }}/{{ $build.Name }}/service-worker.js
+- url: /{{ $build.Name }}/service-worker.js
   static_files: {{ $x.StaticPath }}/{{ $build.Name }}/service-worker.js
   upload: {{ $x.StaticPath }}/{{ $build.Name }}/service-worker.js
   secure: always
@@ -127,7 +123,7 @@ handlers:
     Cache-Control: "private, max-age=0, must-revalidate"
     Service-Worker-Allowed: "/"
 
-- url: /{{ $x.StaticVersion }}/{{ $build.Name }}/
+- url: /{{ $build.Name }}/
   static_dir: {{ $x.StaticPath }}/{{ $build.Name }}/
   application_readable: true
   secure: always
@@ -139,7 +135,4 @@ handlers:
 - url: /.*
   script: _go_app
   secure: always
-
-env_variables:
-  STATIC_VERSION: {{ .StaticVersion }}
 `

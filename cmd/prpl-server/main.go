@@ -13,14 +13,13 @@ import (
 )
 
 var (
-	help          bool
-	version       bool
-	host          string
-	port          int
-	root          string
-	config        string
-	staticVersion string
-	httpRedirect  bool
+	help         bool
+	version      bool
+	host         string
+	port         int
+	root         string
+	config       string
+	httpRedirect bool
 )
 
 func init() {
@@ -32,7 +31,6 @@ func init() {
 	flag.IntVar(&port, "port", 8080, "Listen on this port; 0 for random (default 8080).")
 	flag.StringVar(&root, "root", ".", `Serve files relative to this directory (default ".").`)
 	flag.StringVar(&config, "config", "", `JSON configuration file (default "<root>/polymer.json" if exists).`)
-	flag.StringVar(&staticVersion, "static-version", timestamp, `Version to add to static folder path (default YYYYMMDDhhmmss timestamp).`)
 	flag.BoolVar(&httpRedirect, "http-redirect", false, "Redirect HTTP requests to HTTPS with a 301. Assumes same hostname and default port (443). Trusts X-Forwarded-* headers for detecting protocol and hostname.")
 }
 
@@ -65,7 +63,6 @@ func main() {
 	}
 
 	m, _ := prpl.New(
-		prpl.WithVersion(staticVersion),
 		prpl.WithRoot(http.Dir(root)),
 		prpl.WithConfigFile(config),
 	)

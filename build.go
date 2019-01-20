@@ -1,7 +1,6 @@
 package prpl
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -40,7 +39,7 @@ type (
 
 var files = make(map[string]*file)
 
-func loadBuilds(config *ProjectConfig, root http.Dir, routes Routes, version string, createTemplate createTemplateFn) builds {
+func loadBuilds(config *ProjectConfig, root http.Dir, routes Routes, createTemplate createTemplateFn) builds {
 	builds := builds{}
 	entrypoint := "index.html"
 	if config != nil && config.Entrypoint != "" {
@@ -49,14 +48,14 @@ func loadBuilds(config *ProjectConfig, root http.Dir, routes Routes, version str
 
 	if config == nil || len(config.Builds) == 0 {
 		log.Println("WARNING: No builds configured")
-		builds = append(builds, newBuild(config, 0, "", 0, entrypoint, string(root), root, routes, version, createTemplate))
+		builds = append(builds, newBuild(config, 0, "", 0, entrypoint, string(root), root, routes, createTemplate))
 	} else {
 		for i, build := range config.Builds {
 			if build.Name == "" {
 				log.Printf("WARNING: Build at offset %d has no name; skipping.\n", i)
 				continue
 			}
-			builds = append(builds, newBuild(config, i, build.Name, newCapabilities(build.BrowserCapabilities), filepath.Join(build.Name, entrypoint), filepath.Join(string(root), build.Name), root, routes, version, createTemplate))
+			builds = append(builds, newBuild(config, i, build.Name, newCapabilities(build.BrowserCapabilities), filepath.Join(build.Name, entrypoint), filepath.Join(string(root), build.Name), root, routes, createTemplate))
 		}
 	}
 
@@ -98,7 +97,7 @@ func (a byPriority) Less(i, j int) bool {
 	return sizeDiff > 0
 }
 
-func newBuild(config *ProjectConfig, configOrder int, name string, requirements capability, entrypoint, buildDir string, root http.Dir, routes Routes, version string, createTemplate createTemplateFn) *build {
+func newBuild(config *ProjectConfig, configOrder int, name string, requirements capability, entrypoint, buildDir string, root http.Dir, routes Routes, createTemplate createTemplateFn) *build {
 	pushManifestPath := filepath.Join(buildDir, "push-manifest.json")
 	pushManifest, err := ReadManifest(pushManifestPath)
 	if err != nil {
@@ -129,13 +128,6 @@ func newBuild(config *ProjectConfig, configOrder int, name string, requirements 
 				return err
 			}
 
-			// add version to path
-			data = bytes.Replace(
-				data,
-				[]byte(fmt.Sprintf(`<base href="/%s/">`, name)),
-				[]byte(fmt.Sprintf(`<base href="%s%s/">`, version, name)),
-				1)
-
 			template = createTemplate(entrypoint, data, info.ModTime())
 
 			file.data = data
@@ -150,7 +142,7 @@ func newBuild(config *ProjectConfig, configOrder int, name string, requirements 
 
 	// create map of routes -> push headers
 	pushHeaders := PushHeaders{}
-	prefix := version + name + "/"
+	prefix := name + "/"
 
 	for path, fragment := range routes {
 		set := map[string]struct{}{}
