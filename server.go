@@ -34,7 +34,9 @@ func (p *prpl) routeHandler(w http.ResponseWriter, r *http.Request) {
 
 	h := w.Header()
 	h.Set("Cache-Control", "public, max-age=0")
-	build.addHeaders(w, h, r.URL.Path)
+	if p.usePush {
+		build.addPushHeaders(w, h, r.URL.Path)
+	}
 	build.template.Render(w, r)
 }
 
@@ -57,7 +59,7 @@ func (p *prpl) staticHandler(next http.Handler) http.Handler {
 
 		// TODO: if using original prpl-server-node strategy
 		// add the push headers for *this* push-manifest entry
-		// build.addHeaders(w, h, r.URL.Path)
+		// build.addPushHeaders(w, h, r.URL.Path)
 
 		content := bytes.NewReader(file.data)
 		http.ServeContent(w, r, r.URL.Path, file.modTime, content)
@@ -66,21 +68,19 @@ func (p *prpl) staticHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func (b *build) addHeaders(w http.ResponseWriter, header http.Header, filename string) {
+func (b *build) addPushHeaders(w http.ResponseWriter, header http.Header, filename string) {
 	if links, ok := b.pushHeaders[filename]; ok {
 		// TODO: use actual push if server supports it
 		// need to add content type to push header info
 		// if pusher, ok := w.(http.Pusher); ok {
-		/*
-			for _, url := range headers {
-				pusher.Push(url, &http.PushOptions{
-					Header: http.Header{
-						"Cache-Control": []string{"public, max-age=31536000, immutable"},
-						"Content-Type":  []string{"TODO: file content type here"},
-					},
-				})
-			}
-		*/
+		// 	for _, url := range links {
+		// 		pusher.Push(url, &http.PushOptions{
+		// 			Header: http.Header{
+		// 				"Cache-Control": []string{"public, max-age=31536000, immutable"},
+		// 				"Content-Type":  []string{"TODO: file content type here"},
+		// 			},
+		// 		})
+		// 	}
 		// } else {
 		// otherwise hope there is a proxy that will do it for us
 		for _, link := range links {

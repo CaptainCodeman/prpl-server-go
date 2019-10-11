@@ -17,6 +17,7 @@ type (
 		routes         Routes
 		staticHandlers map[string]http.Handler
 		createTemplate createTemplateFn
+		usePush        bool
 	}
 
 	// optionFn provides functional option configuration
@@ -30,6 +31,7 @@ func New(options ...optionFn) (*prpl, error) {
 		root:           http.Dir("."),
 		staticHandlers: make(map[string]http.Handler),
 		createTemplate: createDefaultTemplate,
+		usePush:        true,
 	}
 
 	for _, option := range options {
@@ -132,6 +134,15 @@ func WithStaticHandler(path string, handler http.Handler) optionFn {
 func WithRouteTemplate(factory createTemplateFn) optionFn {
 	return func(p *prpl) error {
 		p.createTemplate = factory
+		return nil
+	}
+}
+
+// WithPush allows control over the sending of http server
+// push / link headers
+func WithPush(usePush bool) optionFn {
+	return func(p *prpl) error {
+		p.usePush = usePush
 		return nil
 	}
 }
